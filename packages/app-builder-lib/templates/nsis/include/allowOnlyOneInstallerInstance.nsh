@@ -40,7 +40,7 @@
     ${nsProcess::FindProcess} "${_FILE}" ${_ERR}
   !else
     # find process owned by current user
-    nsExec::Exec `cmd /c tasklist /FI "USERNAME eq %USERNAME%" /FI "IMAGENAME eq ${_FILE}" | find "${_FILE}"`
+    nsExec::Exec `%SYSTEMROOT%\System32\cmd.exe /c tasklist /FI "USERNAME eq %USERNAME%" /FI "IMAGENAME eq ${_FILE}" | find "${_FILE}"`
     Pop ${_ERR}
   !endif
 !macroend
@@ -71,7 +71,7 @@
       !ifdef INSTALL_MODE_PER_ALL_USERS
         nsExec::Exec `taskkill /im "${APP_EXECUTABLE_FILENAME}" /fi "PID ne $pid"`
       !else
-        nsExec::Exec `cmd /c taskkill /im "${APP_EXECUTABLE_FILENAME}" /fi "PID ne $pid" /fi "USERNAME eq %USERNAME%"`
+        nsExec::Exec `%SYSTEMROOT%\System32\cmd.exe /c taskkill /im "${APP_EXECUTABLE_FILENAME}" /fi "PID ne $pid" /fi "USERNAME eq %USERNAME%"`
       !endif
       # to ensure that files are not "in-use"
       Sleep 300
@@ -88,13 +88,12 @@
           Sleep 1000
           !ifdef INSTALL_MODE_PER_ALL_USERS
             nsExec::Exec `taskkill /f /im "${APP_EXECUTABLE_FILENAME}" /fi "PID ne $pid"`
-            Pop $R0
           !else
-            nsExec::Exec `cmd /c taskkill /f /im "${APP_EXECUTABLE_FILENAME}" /fi "PID ne $pid" /fi "USERNAME eq %USERNAME%"`
-            Pop $R0
+            nsExec::Exec `%SYSTEMROOT%\System32\cmd.exe /c taskkill /f /im "${APP_EXECUTABLE_FILENAME}" /fi "PID ne $pid" /fi "USERNAME eq %USERNAME%"`
           !endif
-          ${If} $R0 != 0
-            DetailPrint `Waiting for "${PRODUCT_NAME}" to close (taskkill exit code $R0).`
+          !insertmacro FIND_PROCESS "${APP_EXECUTABLE_FILENAME}" $R0
+          ${If} $R0 == 0
+            DetailPrint `Waiting for "${PRODUCT_NAME}" to close.`
             Sleep 2000
           ${else}
             Goto not_running
